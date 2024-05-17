@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bate papo Node.JS e socket.io</title>
+    <style>
+        /* style.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: white; 
+    margin: 0;
+    padding: 0;
+    border-radius: 300px;
+    transition: background-color 0.5s ease;
+  }
+
+  h2{
+    color: rgb(0, 0, 0);
+    text-align: center;
+    font-weight: bolder;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 20px;
+    display: flex;
+  }
+  
+  #geral {
+    background-color: #791b63f5; 
+    width: 300px;
+    margin: 40px auto;
+    padding: 40px;
+    border-radius: 20px; 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-top: 110px;
+  }
+  
+  #mensagens {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto; /* Permite rolagem suave */
+    height: 400px; 
+    max-height: 700px; 
+    margin-right: 10px;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  #juntar{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  
+  
+  input[type="text"] {
+    width: 80%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 50px;
+    box-sizing: border-box; 
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  button {
+    padding: 10px 20px;
+    background-color: #af4caf; 
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-left: 30px; 
+  }
+  
+  button:hover {
+    background-color: #dfc4da; 
+    color: black;
+  }
+  
+ 
+  .enviado{
+    text-align: right;
+    color: white;
+    border-radius: 20px;
+  }
+
+  .dark-mode {
+    background-color: #333; /* Cor de fundo escura */
+    color: #fff; /* Cor de texto clara */
+    transition: background-color 0.3s ease; /* Transição suave para a mudança de cor */
+  }
+
+  #toggleBtn{
+    background-color:#791b63f5;
+    color: #333;
+    text-align: center;
+    margin-bottom: 40px;
+    margin-left: 60px;
+  }
+        
+    </style>
+</head>
+<body onload="sortearNumero()">
+    
+    <div id="geral">
+        <input type="text" id="nome" placeholder="Seu nome de usuário"><br><br>
+        <ul id="mensagens"></ul>
+        <button id="toggleBtn">Obter modo temporário</button>
+        <form>  
+            <div id="juntar">
+                <input type="text" id="mensagem" placeholder="Sua mensagem"><br><br>
+                <button>Enviar</button>
+                <div id="chat"></div>
+            </div>
+        </form>
+    </div>
+    
+      
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const toggleBtn = document.getElementById('toggleBtn');
+
+    toggleBtn.addEventListener('click', function(event) {
+    event.preventDefault(); // Evita a submissão do formulário se estiver dentro de um form
+    
+    // Verifica se a página está no modo noturno
+    if (document.body.style.backgroundColor === 'rgb(51, 51, 51)') {
+        // Se estiver no modo noturno, altera para o modo claro
+        document.body.style.backgroundColor = '#cacacab6';
+        document.body.style.color = 'black';
+        toggleBtn.textContent = 'Obter modo temporário';
+    } else {
+        // Caso contrário, altera para o modo noturno
+        document.body.style.backgroundColor = '#333';
+        document.body.style.color = 'white';
+        toggleBtn.textContent = 'Obter modo temporário';
+    }
+    });
+// No lado do servidor, você precisa tratar o envio de dados multipart/form-data e salvar a imagem, se necessário.
+
+        var idSorteado;
+        function sortearNumero() {
+            // Gera um número aleatório entre 1 e 10000
+            const id = Math.floor(Math.random() * 10000) + 1;
+            
+            idSorteado = id;
+            // Exibe o número sorteado na tela
+            console.log("Número sorteado:", idSorteado);
+          }
+        //Cria uma instância do socket.io
+        const socket = io();
+        //Seleciona o valor do input nome de usuário
+        const nomeInput = document.getElementById('nome');
+        //Seleciona o valor do input da mensagem
+        const mensagemInput = document.getElementById('mensagem');
+        //Seleciona a lista de mensagens
+        const mensagens = document.getElementById('mensagens');
+
+        //Evento de envio do formulário
+        document.querySelector('form').addEventListener('submit', event => {
+            //Parão de envios 
+            event.preventDefault();
+
+            const nome = nomeInput.value;
+            const mensagem = mensagemInput.value;
+
+
+            //Verificar se os valores estão branco
+            nome.trim() && mensagem.trim && socket.emit('chat message', {nome, mensagem, idSorteado})
+            //Limpar o input da mensagem
+            mensagemInput.value = '';
+            //Desabilita o input do usuário
+            nomeInput.disabled = true;
+        });
+
+        socket.on('chat message', dados => {
+            if(idSorteado == dados.idSorteado){
+                //Criar um elemento de lista para exibir a mensagem
+                const lista = document.createElement('div')
+                lista.classList.add('enviado');
+                //Define o texto da mensagem
+                lista.textContent = `${dados.nome}: ${dados.mensagem}`;
+                //Adicionar o evento de lista de mensagem
+                mensagens.appendChild(lista);
+            }else{
+                //Criar um elemento de lista para exibir a mensagem
+                const lista = document.createElement('li')
+                //Define o texto da mensagem
+                lista.textContent = `${dados.nome}: ${dados.mensagem}`;
+                //Adicionar o evento de lista de mensagem
+                mensagens.appendChild(lista);
+            }
+
+            mensagens.scrollTop = mensagens.scrollHeight
+        })
+    </script>
+
+</body>
+</html>
